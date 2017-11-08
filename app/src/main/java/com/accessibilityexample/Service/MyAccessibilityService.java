@@ -3,6 +3,7 @@ package com.accessibilityexample.Service;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
@@ -32,10 +33,11 @@ public class MyAccessibilityService extends AccessibilityService {
         currntApplicationPackage = sourcePackageName;
         Log.d(TAG, "sourcePackageName:" + sourcePackageName);
         Log.d(TAG, "parcelable:" + accessibilityEvent.getText().toString());
+        Log.d(TAG, "Event Type:" + accessibilityEvent.getEventType());
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-      /*  if (accessibilityEvent.getEventType() == AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION) {
+        if (accessibilityEvent.getEventType() == AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION) {
             Log.d(TAGEVENTS, "CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION");
         }
         if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
@@ -79,33 +81,35 @@ public class MyAccessibilityService extends AccessibilityService {
         }
         if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
             Log.d(TAGEVENTS, "TYPE_WINDOWS_CHANGED");
-        }*/
+        }
 
-        if (accessibilityEvent.getPackageName() == null || !(accessibilityEvent.getPackageName().equals("com.bsb.hike") || !(accessibilityEvent.getPackageName().equals("com.whatsapp") || accessibilityEvent.getPackageName().equals("com.facebook.orca") || accessibilityEvent.getPackageName().equals("com.twitter.android") || accessibilityEvent.getPackageName().equals("com.facebook.katana") || accessibilityEvent.getPackageName().equals("com.facebook.lite"))))
+        if (accessibilityEvent.getPackageName() == null || !(accessibilityEvent.getPackageName().equals(
+                "com.whatsapp"))) {
             showWindow = false;
+            return;
+        }
 
         if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
             Log.d(TAGEVENTS, "TYPE_VIEW_TEXT_CHANGED");
-            if (windowController == null)
-                windowController = new WindowPositionController(windowManager, getApplicationContext());
-            showWindow = true;
-            windowController.notifyDatasetChanged(accessibilityEvent.getText().toString(), currntApplicationPackage);
-        } else if(accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED){
-            Log.d(TAGEVENTS, "TYPE_WINDOW_STATE_CHANGED:"+accessibilityEvent.getContentDescription());
+//            if (windowController == null)
+//                windowController = new WindowPositionController(windowManager, getApplicationContext());
+//            showWindow = true;
+//            windowController.notifyDatasetChanged(accessibilityEvent.getText().toString(), currntApplicationPackage);
 
-            if (accessibilityEvent.getPackageName().equals("com.whatsapp") && (accessibilityEvent.getContentDescription() == null || !accessibilityEvent.getContentDescription().equals("Type a message")))
-                showWindow = false;
-            if (accessibilityEvent.getPackageName().equals("com.facebook.katana") && (accessibilityEvent.getText().toString().equals("[What's on your mind?]") || accessibilityEvent.getText().toString().equals("[Search]")))
-                showWindow = false;
-            if (accessibilityEvent.getPackageName().equals("com.twitter.android") && (accessibilityEvent.getText().toString().equals("[What\u2019s happening?]") || accessibilityEvent.getText().toString().equals("[Search Twitter]")))
-                showWindow = false;
-            if (accessibilityEvent.getContentDescription()!=null && (accessibilityEvent.getContentDescription().toString().equals("Textbox in chat thread")))
-                showWindow = true;
-
-
+            SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("shared",
+                    Context.MODE_PRIVATE);
+            sharedPref.edit().putString("PRINTED_TEXT",
+                    accessibilityEvent.getText().toString()).commit();
             //remove window when keyboard closed or user moved from chatting to other things
             if (windowController != null && !showWindow)
                 windowController.onDestroy();
+        } else if (accessibilityEvent.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED ) {
+            SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("shared",
+                    Context.MODE_PRIVATE);
+
+            String text = sharedPref.getString("PRINTED_TEXT", "NA") + " Sent !";
+            sharedPref.edit().putString("PRINTED_TEXT",
+                    text).commit();
         }
     }
 
@@ -146,7 +150,8 @@ public class MyAccessibilityService extends AccessibilityService {
             Log.e(TAG, "Error finding setting, default accessibility to not found: "
                     + e.getMessage());
         }
-        TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
+        TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(
+                ':');
 
         if (accessibilityEnabled == 1) {
             Log.v(TAG, "***ACCESSIBILIY IS ENABLED*** -----------------");
@@ -161,7 +166,8 @@ public class MyAccessibilityService extends AccessibilityService {
 
                     Log.v(TAG, "-------------- > accessabilityService :: " + accessabilityService);
                     if (accessabilityService.equalsIgnoreCase(service)) {
-                        Log.v(TAG, "We've found the correct setting - accessibility is switched on!");
+                        Log.v(TAG,
+                                "We've found the correct setting - accessibility is switched on!");
                         return true;
                     }
                 }
